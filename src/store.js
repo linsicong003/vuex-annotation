@@ -223,6 +223,7 @@ export class Store {
     resetStoreVM(this, this.state)
   }
 
+  // 卸载模块
   unregisterModule (path) {
     if (typeof path === 'string') path = [path]
 
@@ -238,6 +239,7 @@ export class Store {
     resetStore(this)
   }
 
+  // 判断模块是否注册
   hasModule (path) {
     if (typeof path === 'string') path = [path]
 
@@ -248,6 +250,7 @@ export class Store {
     return this._modules.isRegistered(path)
   }
 
+  // 热更新
   hotUpdate (newOptions) {
     this._modules.update(newOptions)
     resetStore(this, true)
@@ -275,6 +278,7 @@ function genericSubscribe (fn, subs) {
   }
 }
 
+// 重置整个 store 
 function resetStore (store, hot) {
   store._actions = Object.create(null)
   store._mutations = Object.create(null)
@@ -287,6 +291,8 @@ function resetStore (store, hot) {
   resetStoreVM(store, state, hot)
 }
 
+// 重置 Vue 实例
+// 为原有通过闭包包装的 getter 重新设置监听
 function resetStoreVM (store, state, hot) {
   const oldVm = store._vm
 
@@ -325,6 +331,7 @@ function resetStoreVM (store, state, hot) {
     enableStrictMode(store)
   }
 
+  // 如果旧实例还存在则卸载
   if (oldVm) {
     if (hot) {
       // dispatch changes in all subscribed watchers
@@ -375,22 +382,26 @@ function installModule (store, rootState, path, module, hot) {
 
   const local = module.context = makeLocalContext(store, namespace, path)
 
+  // 循环注册所有 mutation
   module.forEachMutation((mutation, key) => {
     const namespacedType = namespace + key
     registerMutation(store, namespacedType, mutation, local)
   })
 
+  // 循环注册所有 action
   module.forEachAction((action, key) => {
     const type = action.root ? key : namespace + key
     const handler = action.handler || action
     registerAction(store, type, handler, local)
   })
 
+  // 循环注册所有 getter
   module.forEachGetter((getter, key) => {
     const namespacedType = namespace + key
     registerGetter(store, namespacedType, getter, local)
   })
 
+  // 循环加载所有子模块
   module.forEachChild((child, key) => {
     installModule(store, rootState, path.concat(key), child, hot)
   })
@@ -400,6 +411,8 @@ function installModule (store, rootState, path, module, hot) {
  * make localized dispatch, commit, getters and state
  * if there is no namespace, just use root ones
  */
+// 将定义的操作函数本地化（加上模块名来调用）
+// 模块内调用的时候自动加上模块名的前缀，如果在根模块则直接操作
 function makeLocalContext (store, namespace, path) {
   const noNamespace = namespace === ''
 
@@ -439,6 +452,8 @@ function makeLocalContext (store, namespace, path) {
 
   // getters and state object must be gotten lazily
   // because they will be changed by vm update
+  // state 跟 getter 的获取使用来加载
+  // 因为他们会在实例更新的时候被改变
   Object.defineProperties(local, {
     getters: {
       get: noNamespace
@@ -453,31 +468,37 @@ function makeLocalContext (store, namespace, path) {
   return local
 }
 
+// 将 getter 本地化
 function makeLocalGetters (store, namespace) {
   if (!store._makeLocalGettersCache[namespace]) {
     const gettersProxy = {}
     const splitPos = namespace.length
     Object.keys(store.getters).forEach(type => {
       // skip if the target getter is not match this namespace
+      // 如果不属于这个模块的就跳过
       if (type.slice(0, splitPos) !== namespace) return
 
       // extract local getter type
+      // 将 getter 的函数名切割出来
       const localType = type.slice(splitPos)
 
       // Add a port to the getters proxy.
       // Define as getter property because
       // we do not want to evaluate the getters in this time.
+      // 加到新的 gettersProxy 对象里
       Object.defineProperty(gettersProxy, localType, {
         get: () => store.getters[type],
         enumerable: true
       })
     })
+    // 循环加载完成后把当前模块的 getter 集合对象赋给 store 实例 getter 缓存的对应模块处
     store._makeLocalGettersCache[namespace] = gettersProxy
   }
 
   return store._makeLocalGettersCache[namespace]
 }
 
+// 循环注册所有 mutation
 function registerMutation (store, type, handler, local) {
   const entry = store._mutations[type] || (store._mutations[type] = [])
   entry.push(function wrappedMutationHandler (payload) {
@@ -485,8 +506,10 @@ function registerMutation (store, type, handler, local) {
   })
 }
 
+// 循环注册所有 action
 function registerAction (store, type, handler, local) {
   const entry = store._actions[type] || (store._actions[type] = [])
+  // 推入包装模块变量后的 action 函数
   entry.push(function wrappedActionHandler (payload) {
     let res = handler.call(store, {
       dispatch: local.dispatch,
@@ -496,9 +519,11 @@ function registerAction (store, type, handler, local) {
       rootGetters: store.getters,
       rootState: store.state
     }, payload)
+    // 如果执行函数不返回 Promise 则改成返回 Promise
     if (!isPromise(res)) {
       res = Promise.resolve(res)
     }
+    // 错误处理
     if (store._devtoolHook) {
       return res.catch(err => {
         store._devtoolHook.emit('vuex:error', err)
@@ -510,6 +535,7 @@ function registerAction (store, type, handler, local) {
   })
 }
 
+// 注册包装模块变量后的 getter 函数
 function registerGetter (store, type, rawGetter, local) {
   if (store._wrappedGetters[type]) {
     if (process.env.NODE_ENV !== 'production') {
@@ -527,6 +553,7 @@ function registerGetter (store, type, rawGetter, local) {
   }
 }
 
+// 严格模式下不能在 mutation 外修改 state 内容
 function enableStrictMode (store) {
   store._vm.$watch(function () { return this._data.$$state }, () => {
     if (process.env.NODE_ENV !== 'production') {
@@ -535,6 +562,7 @@ function enableStrictMode (store) {
   }, { deep: true, sync: true })
 }
 
+// 获取嵌套变量
 function getNestedState (state, path) {
   return path.reduce((state, key) => state[key], state)
 }
