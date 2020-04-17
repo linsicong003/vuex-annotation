@@ -184,6 +184,7 @@ export class Store {
     })
   }
 
+  // 生成监控属性
   subscribe (fn) {
     return genericSubscribe(fn, this._subscribers)
   }
@@ -567,7 +568,7 @@ function getNestedState (state, path) {
   return path.reduce((state, key) => state[key], state)
 }
 
-// 校验传入参数
+// 校验传入参数，兼容使用对象配置形式调用
 // 如果配置在第一个参数以对象形式传入
 // 执行相对应位置的解构
 // 如果 type 传了其实类型则报错
