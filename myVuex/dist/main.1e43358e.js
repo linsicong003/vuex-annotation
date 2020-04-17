@@ -8546,7 +8546,74 @@ if (inBrowser) {
 
 var _default = Vue;
 exports.default = _default;
-},{}],"node_modules/vue-hot-reload-api/dist/index.js":[function(require,module,exports) {
+},{}],"C:/Users/gutong/AppData/Local/Yarn/Data/global/node_modules/parcel-bundler/src/builtins/bundle-url.js":[function(require,module,exports) {
+var bundleURL = null;
+
+function getBundleURLCached() {
+  if (!bundleURL) {
+    bundleURL = getBundleURL();
+  }
+
+  return bundleURL;
+}
+
+function getBundleURL() {
+  // Attempt to find the URL of the current script and use that as the base URL
+  try {
+    throw new Error();
+  } catch (err) {
+    var matches = ('' + err.stack).match(/(https?|file|ftp|chrome-extension|moz-extension):\/\/[^)\n]+/g);
+
+    if (matches) {
+      return getBaseURL(matches[0]);
+    }
+  }
+
+  return '/';
+}
+
+function getBaseURL(url) {
+  return ('' + url).replace(/^((?:https?|file|ftp|chrome-extension|moz-extension):\/\/.+)\/[^/]+$/, '$1') + '/';
+}
+
+exports.getBundleURL = getBundleURLCached;
+exports.getBaseURL = getBaseURL;
+},{}],"C:/Users/gutong/AppData/Local/Yarn/Data/global/node_modules/parcel-bundler/src/builtins/css-loader.js":[function(require,module,exports) {
+var bundle = require('./bundle-url');
+
+function updateLink(link) {
+  var newLink = link.cloneNode();
+
+  newLink.onload = function () {
+    link.remove();
+  };
+
+  newLink.href = link.href.split('?')[0] + '?' + Date.now();
+  link.parentNode.insertBefore(newLink, link.nextSibling);
+}
+
+var cssTimeout = null;
+
+function reloadCSS() {
+  if (cssTimeout) {
+    return;
+  }
+
+  cssTimeout = setTimeout(function () {
+    var links = document.querySelectorAll('link[rel="stylesheet"]');
+
+    for (var i = 0; i < links.length; i++) {
+      if (bundle.getBaseURL(links[i].href) === bundle.getBundleURL()) {
+        updateLink(links[i]);
+      }
+    }
+
+    cssTimeout = null;
+  }, 50);
+}
+
+module.exports = reloadCSS;
+},{"./bundle-url":"C:/Users/gutong/AppData/Local/Yarn/Data/global/node_modules/parcel-bundler/src/builtins/bundle-url.js"}],"node_modules/vue-hot-reload-api/dist/index.js":[function(require,module,exports) {
 var Vue // late bind
 var version
 var map = Object.create(null)
@@ -8840,7 +8907,7 @@ exports.default = void 0;
 var _default = {
   data: function data() {
     return {
-      msg: 'hello vue',
+      msg: 'Vuex 测试',
       count: 1
     };
   },
@@ -8849,15 +8916,17 @@ var _default = {
       return this.$store.state.count;
     }
   },
-  created: function created() {},
   methods: {
     doCount: function doCount() {
       this.count = this.nowCount;
+      console.log('## 我是 commit 之前的值： ##', this.nowCount);
       this.$store.commit('doCount', ++this.count);
-      console.log(this.count);
+      console.log('## 结果值： ##', this.nowCount);
     },
     doCountDouble: function doCountDouble() {
+      console.log('## 我是 dispatch 之前的值： ##', this.nowCount);
       this.$store.dispatch('doCountDouble');
+      console.log('## 结果值： ##', this.nowCount);
     }
   }
 };
@@ -8874,8 +8943,10 @@ exports.default = _default;
   var _vm = this
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
-  return _c("section", [
-    _c("div", [_vm._v(_vm._s(_vm.msg))]),
+  return _c("section", { staticClass: "container" }, [
+    _c("div", { staticStyle: { "margin-bottom": "30px" } }, [
+      _vm._v(_vm._s(_vm.msg))
+    ]),
     _vm._v(" "),
     _c("button", { on: { click: _vm.doCount } }, [
       _vm._v(_vm._s(_vm.nowCount))
@@ -8891,7 +8962,7 @@ render._withStripped = true
             render: render,
             staticRenderFns: staticRenderFns,
             _compiled: true,
-            _scopeId: null,
+            _scopeId: "data-v-6df2be",
             functional: undefined
           };
         })());
@@ -8911,9 +8982,13 @@ render._withStripped = true
         }
 
         
+        var reloadCSS = require('_css_loader');
+        module.hot.dispose(reloadCSS);
+        module.hot.accept(reloadCSS);
+      
       }
     })();
-},{"vue-hot-reload-api":"node_modules/vue-hot-reload-api/dist/index.js","vue":"node_modules/vue/dist/vue.runtime.esm.js"}],"src/store/util.js":[function(require,module,exports) {
+},{"_css_loader":"C:/Users/gutong/AppData/Local/Yarn/Data/global/node_modules/parcel-bundler/src/builtins/css-loader.js","vue-hot-reload-api":"node_modules/vue-hot-reload-api/dist/index.js","vue":"node_modules/vue/dist/vue.runtime.esm.js"}],"src/store/util.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8956,8 +9031,6 @@ var Store =
 /*#__PURE__*/
 function () {
   function Store() {
-    var _this = this;
-
     var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
     var Vue = arguments.length > 1 ? arguments[1] : undefined;
 
@@ -8986,14 +9059,14 @@ function () {
     var store = this; // 装载 getters
 
     (0, _util.forEachValue)(getters, function (fn, type) {
-      registerGetter(_this, type, fn);
+      registerGetter(store, type, fn);
     }); // 装载 mutations 和 actions
 
     (0, _util.forEachValue)(mutations, function (fn, type) {
-      registerMutation(_this, type, fn);
+      registerMutation(store, type, fn);
     });
     (0, _util.forEachValue)(actions, function (fn, type) {
-      registerAction(_this, type, fn);
+      registerAction(store, type, fn);
     });
 
     this.dispatch = function boundDispatch(type, payload) {
@@ -9016,6 +9089,7 @@ function () {
 
       if (!entry) {
         console.error("[vuex] unknown mutation type: ".concat(type));
+        return;
       } // 执行对应处理函数
 
 
@@ -9028,6 +9102,12 @@ function () {
     key: "dispatch",
     value: function dispatch(type, payload) {
       var entry = this._actions[type];
+
+      if (!entry) {
+        console.error("[vuex] unknown action type: ".concat(type));
+        return;
+      }
+
       entry(payload);
     } // 执行函数并加锁
 

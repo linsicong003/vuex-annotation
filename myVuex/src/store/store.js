@@ -1,4 +1,4 @@
-import { isObject, forEachValue } from './util' 
+import { forEachValue } from './util' 
 
 let Vue
 
@@ -22,16 +22,16 @@ export class Store {
 
         // 装载 getters
         forEachValue(getters, (fn, type) => {
-            registerGetter(this, type, fn)
+            registerGetter(store, type, fn)
         })
 
         // 装载 mutations 和 actions
         forEachValue(mutations, (fn, type) => {
-            registerMutation(this, type, fn)
+            registerMutation(store, type, fn)
         })
 
         forEachValue(actions, (fn, type) => {
-            registerAction(this, type, fn)
+            registerAction(store, type, fn)
         })
 
         this.dispatch = function boundDispatch (type, payload) {
@@ -45,9 +45,11 @@ export class Store {
         // 新建 Vue 实例响应式存储
         resetStoreVM(this, state)
     }
+
     get state() {
         return  this._vm._data.$$state
     }
+
     // 禁止再赋值
     set state (v) {
         throw new Error('不允许赋值！！！')
@@ -59,6 +61,7 @@ export class Store {
 
         if (!entry) {
             console.error(`[vuex] unknown mutation type: ${type}`)
+            return
         }
         // 执行对应处理函数
         this._withCommit(() => {
@@ -69,6 +72,11 @@ export class Store {
     // dispatch
     dispatch(type, payload) {
         const entry = this._actions[type]
+
+        if (!entry) {
+            console.error(`[vuex] unknown action type: ${type}`)
+            return
+        }
         
         entry (payload)
     }

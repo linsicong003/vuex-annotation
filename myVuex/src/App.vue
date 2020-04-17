@@ -1,7 +1,7 @@
 <!-- App.vue --> 
 <template>
-    <section>
-        <div>{{msg}}</div>
+    <section class="container">
+        <div style="margin-bottom: 30px;">{{msg}}</div>
         <button @click="doCount">{{ nowCount }}</button>
         <button @click="doCountDouble">乘2</button>
     </section>
@@ -11,7 +11,7 @@
 export default {
   data() {
     return {
-      msg: 'hello vue',
+      msg: 'Vuex 测试',
       count: 1
     }
   },
@@ -20,18 +20,29 @@ export default {
           return this.$store.state.count
       }
   },
-  created() {
-  },
   methods: {
       doCount() {
           this.count = this.nowCount
+          console.log('## 我是 commit 之前的值： ##', this.nowCount);
           this.$store.commit('doCount', ++this.count)
-          console.log(this.count);
-          
+          console.log('## 结果值： ##', this.nowCount);         
       },
       doCountDouble() {
+          console.log('## 我是 dispatch 之前的值： ##', this.nowCount);
           this.$store.dispatch('doCountDouble')
+          console.log('## 结果值： ##', this.nowCount);
       }
   }
 }
 </script>
+<style scoped>
+.container {
+    box-sizing: border-box;
+    padding: 80px;
+    text-align: center;
+}
+button { 
+    width: 100px;
+    height: 40px;
+}
+</style>
